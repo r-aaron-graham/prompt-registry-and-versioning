@@ -17,6 +17,7 @@ def get_registry(ctx: click.Context) -> PromptRegistry:
     if registry is None:
         registry = PromptRegistry()
         ctx.obj["registry"] = registry
+        ctx.call_on_close(registry.close)
     return registry
 
 
@@ -39,9 +40,9 @@ def add(ctx: click.Context, name: str, text: str, description: str, tags: str) -
     click.echo(f"Added prompt '{prompt.name}' version {prompt.version} (id={prompt.id})")
 
 
-@cli.command(help="List all prompts and their latest versions")
+@cli.command("list", help="List all prompts and their latest versions")
 @click.pass_context
-def list(ctx: click.Context) -> None:  # noqa: A003
+def list_prompts(ctx: click.Context) -> None:
     registry = get_registry(ctx)
     prompts = list(registry.list_prompts())
     if not prompts:
@@ -60,8 +61,8 @@ def update(ctx: click.Context, prompt_id: int, text: str) -> None:
     try:
         prompt = registry.update_prompt(prompt_id, text)
         click.echo(f"Updated prompt '{prompt.name}' to version {prompt.version}")
-    except Exception as exc:  # noqa: BLE001
-        click.echo(f"Error updating prompt: {exc}")
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @cli.command(help="Retrieve a prompt by name and optionally version")
@@ -73,8 +74,8 @@ def get(ctx: click.Context, name: str, version: int | None) -> None:  # noqa: A0
     try:
         prompt = registry.get_prompt(name, version)
         click.echo(f"Prompt '{prompt.name}' (v{prompt.version})\n{prompt.text}")
-    except Exception as exc:  # noqa: BLE001
-        click.echo(f"Error retrieving prompt: {exc}")
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 if __name__ == "__main__":

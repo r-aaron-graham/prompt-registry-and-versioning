@@ -51,19 +51,19 @@ class PromptRegistry:
         self.conn.commit()
 
     def add_prompt(self, name: str, text: str, description: Optional[str] = None, tags: Optional[str] = None) -> Prompt:
-        """Add a new prompt.  If a prompt with the same name exists, version is set to 1; otherwise 1."""
-        cur = self.conn.cursor()
-        # Determine the next version for this prompt name
-        cur.execute("SELECT MAX(version) FROM prompts WHERE name = ?", (name,))
-        row = cur.fetchone()
-        version = (row[0] or 0) + 1
-        cur.execute(
-            "INSERT INTO prompts (name, version, text, description, tags) VALUES (?, ?, ?, ?, ?)",
-            (name, version, text, description, tags),
-        )
-        self.conn.commit()
-        prompt_id = cur.lastrowid
-        return Prompt(id=prompt_id, name=name, version=version, text=text, description=description, tags=tags)
+        """Append the next version for a prompt name."""
+        with self.conn:
+            cur = self.conn.execute(
+                "INSERT INTO prompts (name, version, text, description, tags) "
+                "SELECT ?, COALESCE(MAX(version), 0) + 1, ?, ?, ? "
+                "FROM prompts WHERE name = ?",
+                (name, text, description, tags, name),
+            )
+            row = self.conn.execute(
+                "SELECT id, name, version, text, description, tags FROM prompts WHERE id = ?",
+                (cur.lastrowid,),
+            ).fetchone()
+        return Prompt(*row)
 
     def update_prompt(self, prompt_id: int, new_text: str) -> Prompt:
         """Update an existing prompt by creating a new version entry with the updated text."""
