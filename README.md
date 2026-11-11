@@ -21,29 +21,22 @@ pip install -r requirements.txt
 python cli.py --help
 ```
 
-### Adding a new prompt
+### Version a prompt
+
+Run this example with a fresh local `prompts.db`. The first command returns
+the row ID. Use that ID in the update command if it differs from `1`.
 
 ```bash
-python cli.py add "Summarize this document" --description "Generic summarization prompt" --tags summarization,default
-```
-
-### Listing prompts
-
-```bash
+python cli.py add summarize "Summarize this document" --description "Document summary" --tags summarization
+python cli.py update 1 "Summarize the article and list its key points"
 python cli.py list
+python cli.py get summarize --version 1
+python cli.py get summarize --version 2
 ```
 
-### Updating a prompt
-
-```bash
-python cli.py update 1 "Summarize the following article and highlight key points"
-```
-
-### Retrieving a prompt by name and version
-
-```bash
-python cli.py get "Summarize this document" --version 2
-```
+The list shows version 2. Both versions remain retrievable by name, with their
+original text preserved. A missing prompt or row ID reports an error and exits
+with a nonzero status.
 
 ## Extending the registry
 
